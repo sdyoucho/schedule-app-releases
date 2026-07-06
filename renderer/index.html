@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>회사 스케줄 관리</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div id="boot-loading">불러오는 중…</div>
+
+  <!-- ================= 로그인 화면 ================= -->
+  <div id="login-view" class="hidden">
+    <div class="login-card">
+      <div class="login-logo"><div></div></div>
+      <div class="login-title">회사 스케줄</div>
+      <div class="login-sub">등록된 계정으로 로그인하세요</div>
+
+      <div class="login-field">
+        <label for="login-email">이메일</label>
+        <input id="login-email" type="email" autocomplete="username" placeholder="name@company.com">
+      </div>
+      <div class="login-field">
+        <label for="login-password">비밀번호</label>
+        <input id="login-password" type="password" autocomplete="current-password" placeholder="••••••••">
+      </div>
+      <button id="login-btn" class="login-btn">로그인</button>
+
+      <div id="login-error" class="login-error hidden"></div>
+      <div class="login-note">계정은 관리자가 발급합니다. 접근 권한이 필요하면 관리자에게 문의하세요.</div>
+    </div>
+  </div>
+
+  <!-- 위젯 모드: 상단 드래그 바 (창 이동용) -->
+  <div id="widget-bar" class="hidden">
+    <span class="widget-bar-title">회사 스케줄 · 바탕화면 고정 중</span>
+    <div class="widget-bar-actions">
+      <button id="widget-unpin">일반 창으로</button>
+      <button id="widget-quit">종료</button>
+    </div>
+  </div>
+
+  <!-- ================= 대시보드 ================= -->
+  <div id="app-view" class="hidden">
+
+    <!-- 헤더 -->
+    <div class="header">
+      <div class="header-brand">
+        <div class="brand-logo"><div></div></div>
+        <div>
+          <div class="brand-title">회사 스케줄</div>
+          <div class="brand-date" id="header-date"></div>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div class="header-stats" id="header-stats"></div>
+        <div class="user-chip">
+          <span class="user-name" id="user-name"></span>
+          <span class="role-badge" id="role-badge"></span>
+          <button class="logout-btn hidden" id="members-btn">회원 관리</button>
+          <button class="logout-btn hidden" id="widget-btn">위젯 모드</button>
+          <button class="logout-btn" id="logout-btn">로그아웃</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 메인 그리드 -->
+    <div class="main-grid">
+
+      <!-- ===== 좌측: 캘린더 + 오늘 일정 ===== -->
+      <div class="col">
+        <div class="card cal-card">
+          <div class="cal-head">
+            <div class="cal-title" id="cal-title"></div>
+            <div class="cal-nav">
+              <button id="cal-prev">‹</button>
+              <button id="cal-next">›</button>
+            </div>
+          </div>
+          <div class="cal-dow">
+            <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
+          </div>
+          <div id="cal-body"></div>
+        </div>
+
+        <div class="card agenda-card">
+          <div class="agenda-head">
+            <div class="title" id="agenda-title">오늘</div>
+            <div class="date" id="agenda-date"></div>
+            <div class="head-meta">
+              <button class="add-btn" id="agenda-add" title="일정 추가">+</button>
+            </div>
+          </div>
+          <div class="agenda-list" id="agenda-list"></div>
+        </div>
+      </div>
+
+      <!-- ===== 우측: 스케줄 패널 ===== -->
+      <div class="col">
+
+        <!-- 긴급 스케줄 -->
+        <div class="card urgent-card">
+          <div class="card-head">
+            <span style="width:9px;height:9px;border-radius:50%;background:var(--red);"></span>
+            <div class="card-title">긴급 스케줄</div>
+            <div class="head-meta"><span class="count-pill" id="urgent-count">0</span></div>
+          </div>
+          <div class="urgent-grid" id="urgent-grid"></div>
+        </div>
+
+        <!-- 관리자 전용 (관리자에게만 표시) -->
+        <div class="card table-card hidden" id="admin-card">
+          <div class="card-head">
+            <span class="card-icon" style="background:#EAF3FF;color:var(--accent);">A</span>
+            <div class="card-title">관리자 전용</div>
+            <div class="head-meta">
+              <div class="seg">
+                <button id="tab-schedule" class="active">스케쥴</button>
+                <button id="tab-memo">메모</button>
+              </div>
+              <button class="add-btn" id="admin-add" title="추가">+</button>
+            </div>
+          </div>
+
+          <div id="admin-schedule-tab">
+            <div class="task-grid-head">
+              <div>업무</div><div>담당자</div><div>기한</div><div>상태</div><div>클라이언트</div>
+            </div>
+            <div id="admin-rows"></div>
+          </div>
+
+          <div id="admin-memo-tab" class="hidden">
+            <div class="memo-wrap">
+              <div class="memo-head"><i></i><b>회사 개선 사항</b></div>
+              <div class="memo-sub">지금 당장은 아니지만 언젠가 꼭 필요한 일들</div>
+              <div class="memo-grid" id="memo-grid"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 직원 전용 스케줄 -->
+        <div class="card table-card">
+          <div class="card-head">
+            <span class="card-icon" style="background:#E7F6EC;color:var(--green);">S</span>
+            <div class="card-title">직원 전용 스케줄</div>
+            <div class="head-meta">
+              담당 업무 · 데일리
+              <button class="add-btn" id="staff-add" title="업무 추가">+</button>
+            </div>
+          </div>
+          <div class="task-grid-head">
+            <div>업무</div><div>담당자</div><div>기한</div><div>상태</div><div>클라이언트</div>
+          </div>
+          <div id="staff-rows"></div>
+        </div>
+
+        <!-- 클라이언트 별 스케줄 -->
+        <div class="card client-card-wrap">
+          <div class="card-head">
+            <span class="card-icon" style="background:#F2EAFF;color:#7A3FE0;">C</span>
+            <div class="card-title">클라이언트 별 스케줄</div>
+            <div class="head-meta">
+              <span id="client-count">진행 프로젝트 0</span>
+              <button class="add-btn hidden" id="client-add" title="프로젝트 추가">+</button>
+            </div>
+          </div>
+          <div class="client-grid" id="client-grid"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 디테일 드로어 ================= -->
+  <div id="drawer-backdrop"></div>
+  <div id="drawer"></div>
+
+  <div id="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
