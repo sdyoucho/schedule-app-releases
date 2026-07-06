@@ -160,6 +160,25 @@ function bindStaticEvents() {
 
   // 회원 관리 (관리자 전용)
   $('members-btn').addEventListener('click', openMembersPanel);
+
+  // 자동 업데이트 알림
+  if (window.desktop) {
+    window.desktop.onUpdateReady(showUpdateBanner);
+    window.desktop.getPendingUpdate().then(v => { if (v) showUpdateBanner(v); });
+  }
+}
+
+function showUpdateBanner(version) {
+  if ($('update-banner')) return; // 중복 방지
+  const bar = el('div');
+  bar.id = 'update-banner';
+  bar.innerHTML = `새 버전 <b>v${version}</b> 이 준비되었습니다. 지금 적용하거나, 앱 종료 시 자동 적용됩니다.`;
+  const btn = el('button', null, '지금 재시작하고 적용');
+  btn.addEventListener('click', () => window.desktop.installUpdate());
+  const later = el('button', 'later', '나중에');
+  later.addEventListener('click', () => bar.remove());
+  bar.append(btn, later);
+  document.body.appendChild(bar);
 }
 
 async function doLogin() {

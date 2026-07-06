@@ -1,7 +1,7 @@
 {
   "name": "company-schedule",
   "productName": "회사 스케줄 관리",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "회사 스케줄 관리 데스크톱 앱 (Electron + Supabase)",
   "main": "main.js",
   "scripts": {
@@ -10,7 +10,8 @@
     "dist:portable": "electron-builder --win portable"
   },
   "dependencies": {
-    "koffi": "^2.9.0"
+    "koffi": "^2.9.0",
+    "electron-updater": "^6.3.0"
   },
   "devDependencies": {
     "electron": "^33.0.0",
@@ -30,14 +31,29 @@
     ],
     "win": {
       "target": [
-        { "target": "nsis", "arch": ["x64"] },
-        { "target": "portable", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
       ]
     },
     "nsis": {
       "oneClick": true,
       "perMachine": false,
       "shortcutName": "회사 스케줄 관리"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "YOUR_GITHUB_ID",
+      "repo": "schedule-app-releases"
     }
   }
 }

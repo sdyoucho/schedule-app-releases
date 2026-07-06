@@ -133,10 +133,41 @@ function createTray() {
   updateTrayMenu();
 }
 
+// ---------------- 자동 업데이트 (electron-updater + GitHub Releases) ----------------
+// 동작: 실행 시 + 4시간마다 새 버전 확인 → 백그라운드 자동 다운로드
+//       → 렌더러에 알림 → 사용자가 "지금 적용" 클릭 시 재시작, 아니면 종료 시 자동 적용
+let updater = null;
+let pendingUpdateVersion = null; // 다운로드 완료된 새 버전 (위젯 전환으로 창이 재생성돼도 유지)
+function initAutoUpdate() {
+  if (!app.isPackaged) return; // 개발 모드(npm start)에서는 비활성
+  try {
+    const { autoUpdater } = require('electron-updater');
+    updater = autoUpdater;
+    updater.autoDownload = true;
+    updater.autoInstallOnAppQuit = true; // 앱 종료 시 자동 설치
+
+    updater.on('update-downloaded', (info) => {
+      pendingUpdateVersion = info.version;
+      if (win && !win.isDestroyed()) {
+        win.webContents.send('update:ready', info.version);
+      }
+    });
+    updater.on('error', (e) => console.warn('[updater]', e?.message));
+
+    const check = () => updater.checkForUpdates().catch(() => {});
+    check();
+    setInterval(check, 4 * 60 * 60 * 1000);
+  } catch (e) {
+    console.warn('[updater] 초기화 실패:', e.message);
+  }
+}
+
 // ---------------- IPC ----------------
 ipcMain.handle('widget:get-mode', () => (loadState().mode === 'widget' ? 'widget' : 'normal'));
 ipcMain.handle('widget:toggle', () => toggleWidgetMode());
 ipcMain.handle('app:quit', () => app.quit());
+ipcMain.handle('update:install', () => { if (updater) updater.quitAndInstall(); });
+ipcMain.handle('update:get-pending', () => pendingUpdateVersion);
 
 // ---------------- 앱 라이프사이클 ----------------
 const gotLock = app.requestSingleInstanceLock();
@@ -147,6 +178,7 @@ if (!gotLock) {
   app.whenReady().then(() => {
     createWindow();
     createTray();
+    initAutoUpdate();
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();
     });
