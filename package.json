@@ -52,7 +52,7 @@
     },
     "publish": {
       "provider": "github",
-      "owner": "YOUR_GITHUB_ID",
+      "owner": "sdyoucho",
       "repo": "schedule-app-releases"
     }
   }
