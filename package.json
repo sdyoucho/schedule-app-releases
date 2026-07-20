@@ -1,7 +1,7 @@
 {
   "name": "company-schedule",
   "productName": "회사 스케줄 관리",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "회사 스케줄 관리 데스크톱 앱 (Electron + Supabase)",
   "main": "main.js",
   "scripts": {
