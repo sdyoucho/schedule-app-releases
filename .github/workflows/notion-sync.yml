@@ -1,0 +1,29 @@
+# =====================================================================
+# Supabase → Notion 열람용 자동 동기화
+# 매일 한국시간 오전 6시에 실행. Actions 탭에서 수동 실행(Run workflow)도 가능.
+# 필요한 Secrets: SUPABASE_URL, SUPABASE_SERVICE_KEY, NOTION_TOKEN, NOTION_PAGE_ID
+# =====================================================================
+name: Notion Sync
+
+on:
+  schedule:
+    - cron: '0 21 * * *'   # UTC 21:00 = KST 06:00
+  workflow_dispatch:        # 수동 실행 버튼
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Sync Supabase to Notion
+        run: node scripts/notion-sync.js
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_PAGE_ID: ${{ secrets.NOTION_PAGE_ID }}
