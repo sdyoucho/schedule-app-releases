@@ -1,7 +1,9 @@
 # =====================================================================
-# Supabase → Notion 열람용 자동 동기화
+# Supabase → Notion 열람용 자동 동기화 + Supabase 자동 일시정지(pause) 방지
 # 매일 한국시간 오전 6시에 실행. Actions 탭에서 수동 실행(Run workflow)도 가능.
+# 순서: ① Notion 동기화 → ② Supabase에 하트비트 기록(Notion 단계가 실패해도 항상 실행)
 # 필요한 Secrets: SUPABASE_URL, SUPABASE_SERVICE_KEY, NOTION_TOKEN, NOTION_PAGE_ID
+# Supabase 쪽 준비: supabase/schema.sql 하단 keepalive 테이블을 SQL Editor에서 먼저 실행해야 함
 # =====================================================================
 name: Notion Sync
 
@@ -27,3 +29,16 @@ jobs:
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_PAGE_ID: ${{ secrets.NOTION_PAGE_ID }}
+
+      - name: Ping Supabase (프로젝트 자동 일시정지 방지)
+        if: always()
+        run: |
+          curl -sS -f -X PATCH "$SUPABASE_URL/rest/v1/keepalive?id=eq.true" \
+            -H "apikey: $SUPABASE_SERVICE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d "{\"pinged_at\":\"$(date -u +%FT%TZ)\"}"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
