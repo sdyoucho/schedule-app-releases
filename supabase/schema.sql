@@ -137,8 +137,10 @@ create policy "profiles_update_self" on public.profiles for update to authentica
   using (id = auth.uid() or public.is_admin())
   with check (id = auth.uid() or public.is_admin());
 
--- 업무: 전원 조회. 관리자 업무(scope='admin')는 관리자만 쓰기, 직원 업무는 전원 쓰기
-create policy "tasks_select" on public.tasks for select to authenticated using (true);
+-- 업무: 관리자 업무(scope='admin')는 관리자만 조회, 직원 업무는 전원 조회.
+-- 관리자 업무는 관리자만 쓰기, 직원 업무는 전원 쓰기
+create policy "tasks_select" on public.tasks for select to authenticated
+  using (scope = 'staff' or public.is_admin());
 create policy "tasks_insert" on public.tasks for insert to authenticated
   with check (public.is_admin() or scope = 'staff');
 create policy "tasks_update" on public.tasks for update to authenticated
@@ -162,11 +164,29 @@ create policy "memos_select" on public.memos for select to authenticated using (
 create policy "memos_write" on public.memos for all to authenticated
   using (public.is_admin()) with check (public.is_admin());
 
--- 체크리스트: 전원 조회, 체크 토글은 전원 가능.
+-- 체크리스트: 클라이언트 항목은 전원 조회/토글 가능. 업무 항목은 관리자 업무(scope='admin')에
+-- 속한 경우 관리자만 조회/토글 가능(업무 자체를 볼 수 없는 직원에게 노출되지 않도록).
 -- 추가/삭제는 관리자 또는 (직원 업무에 속한 항목)만 가능
-create policy "checklist_select" on public.checklist_items for select to authenticated using (true);
+create policy "checklist_select" on public.checklist_items for select to authenticated
+  using (
+    parent_type = 'client'
+    or (parent_type = 'task' and exists (
+      select 1 from public.tasks t where t.id = parent_id and (t.scope = 'staff' or public.is_admin())
+    ))
+  );
 create policy "checklist_update" on public.checklist_items for update to authenticated
-  using (true) with check (true);
+  using (
+    parent_type = 'client'
+    or (parent_type = 'task' and exists (
+      select 1 from public.tasks t where t.id = parent_id and (t.scope = 'staff' or public.is_admin())
+    ))
+  )
+  with check (
+    parent_type = 'client'
+    or (parent_type = 'task' and exists (
+      select 1 from public.tasks t where t.id = parent_id and (t.scope = 'staff' or public.is_admin())
+    ))
+  );
 create policy "checklist_insert" on public.checklist_items for insert to authenticated
   with check (
     public.is_admin()
