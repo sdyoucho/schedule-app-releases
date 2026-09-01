@@ -110,6 +110,15 @@ create table if not exists public.checklist_items (
 );
 create index if not exists idx_checklist_parent on public.checklist_items(parent_type, parent_id);
 
+-- ---------- 7. Keep-alive (Supabase Free 7일 미사용 자동 일시정지 방지용) ----------
+-- 실 데이터와 무관한 단일 행 테이블. Realtime publication에는 추가하지 않음(불필요한 재조회 방지).
+-- GitHub Actions(notion-sync.yml)가 service 키로 매일 pinged_at을 갱신.
+create table if not exists public.keepalive (
+  id boolean primary key default true check (id),
+  pinged_at timestamptz not null default now()
+);
+insert into public.keepalive (id) values (true) on conflict (id) do nothing;
+
 -- =====================================================================
 -- RLS (행 수준 보안) — 로그인한 사용자만 접근, 역할별 쓰기 권한 분리
 -- =====================================================================
@@ -119,6 +128,8 @@ alter table public.clients         enable row level security;
 alter table public.agenda          enable row level security;
 alter table public.memos           enable row level security;
 alter table public.checklist_items enable row level security;
+alter table public.keepalive        enable row level security;
+-- keepalive: 정책 없음 = anon/authenticated 완전 차단. service 키(Edge/Action)는 RLS를 우회하므로 접근 가능.
 
 -- 프로필: 전원 조회 가능(이름 표시용), 본인 이름 수정 가능, 역할 변경은 관리자만
 create policy "profiles_select" on public.profiles for select to authenticated using (true);
